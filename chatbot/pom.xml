@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+
+	<!-- Sin parent de Spring Boot: google-adk-dev 1.14.0 trae su propio Spring Boot 4.0.x
+	     y un parent 3.5.x le forzaría versiones incompatibles. -->
+	<groupId>com.example</groupId>
+	<artifactId>chatbot</artifactId>
+	<version>0.0.1-SNAPSHOT</version>
+
+	<properties>
+		<maven.compiler.release>21</maven.compiler.release>
+		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+		<adk.version>1.14.0</adk.version>
+	</properties>
+
+	<dependencies>
+		<dependency>
+			<groupId>com.google.adk</groupId>
+			<artifactId>google-adk</artifactId>
+			<version>${adk.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>com.google.adk</groupId>
+			<artifactId>google-adk-dev</artifactId>
+			<version>${adk.version}</version>
+		</dependency>
+	</dependencies>
+
+	<build>
+		<plugins>
+			<plugin>
+				<groupId>org.codehaus.mojo</groupId>
+				<artifactId>exec-maven-plugin</artifactId>
+				<version>3.5.0</version>
+				<configuration>
+					<mainClass>com.example.chatbot.SupermercadoAgent</mainClass>
+					<systemProperties>
+						<systemProperty>
+							<key>server.port</key>
+							<value>8080</value>
+						</systemProperty>
+					</systemProperties>
+				</configuration>
+			</plugin>
+		</plugins>
+	</build>
+</project>
