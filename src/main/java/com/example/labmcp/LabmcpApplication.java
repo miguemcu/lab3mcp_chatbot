@@ -1,5 +1,6 @@
 package com.example.labmcp;
 
+import com.example.labmcp.service.SupermercadoToolsService;
 import com.example.labmcp.service.TareaToolsService;
 import org.springframework.ai.tool.ToolCallbackProvider;
 import org.springframework.ai.tool.method.MethodToolCallbackProvider;
@@ -8,11 +9,11 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
 
 /**
- * Punto de entrada del servidor MCP de tareas.
+ * Punto de entrada del servidor MCP de tareas y del supermercado.
  *
  * <p>Levanta Spring Boot con el starter MCP de Spring AI (Streamable HTTP en
  * {@code http://localhost:8088/mcp}) y registra las herramientas de
- * {@link TareaToolsService}.</p>
+ * {@link TareaToolsService} y {@link SupermercadoToolsService}.</p>
  */
 @SpringBootApplication
 public class LabmcpApplication {
@@ -27,17 +28,18 @@ public class LabmcpApplication {
 	}
 
 	/**
-	 * Expone los métodos {@code @Tool} del servicio como herramientas MCP.
+	 * Expone los métodos {@code @Tool} de los servicios como herramientas MCP.
 	 * El autoconfigurador de Spring AI toma este bean y publica cada método
 	 * en {@code tools/list}.
 	 *
-	 * @param tools servicio con las herramientas de tareas
+	 * @param tareas       herramientas de tareas
+	 * @param supermercado herramientas del supermercado
 	 * @return proveedor de callbacks de herramientas
 	 */
 	@Bean
-	public ToolCallbackProvider tareaTools(TareaToolsService tools) {
+	public ToolCallbackProvider herramientasMcp(TareaToolsService tareas, SupermercadoToolsService supermercado) {
 		return MethodToolCallbackProvider.builder()
-				.toolObjects(tools)
+				.toolObjects(tareas, supermercado)
 				.build();
 	}
 }
