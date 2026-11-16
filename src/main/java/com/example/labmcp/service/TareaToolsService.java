@@ -1,5 +1,7 @@
 package com.example.labmcp.service;
 
+import java.time.LocalDate;
+import java.time.format.DateTimeParseException;
 import java.util.List;
 
 import org.springframework.ai.tool.annotation.Tool;
@@ -23,6 +25,8 @@ import com.example.labmcp.repository.TareaRepository;
  */
 @Component
 public class TareaToolsService {
+
+    private static final String FORMATO_FECHA = "yyyy-MM-dd";
 
     private final TareaRepository repo;
 
@@ -56,6 +60,26 @@ public class TareaToolsService {
     }
 
     /**
+     * Lista las tareas completadas.
+     *
+     * @return tareas con {@code completado = true}
+     */
+    @Tool(description = "Devuelve únicamente las tareas completadas (completado = true).")
+    public List<Tarea> listarCompletadas() {
+        return repo.findByCompletado(true);
+    }
+
+    /**
+     * Cuenta las tareas almacenadas.
+     *
+     * @return número total de tareas
+     */
+    @Tool(description = "Devuelve el número total de tareas almacenadas.")
+    public long contarTareas() {
+        return repo.count();
+    }
+
+    /**
      * Busca tareas por fragmento del título (sin distinguir mayúsculas).
      *
      * @param fragmento texto a buscar; si viene vacío se devuelven todas
@@ -73,19 +97,19 @@ public class TareaToolsService {
      * Crea una tarea pendiente.
      *
      * @param titulo título obligatorio (se recortan espacios)
-     * @param fecha  fecha asociada, opcional
+     * @param fecha  fecha asociada en formato {@code yyyy-MM-dd}, opcional
      * @return la tarea creada, con su id asignado
-     * @throws IllegalArgumentException si el título es nulo o vacío
+     * @throws IllegalArgumentException si el título es nulo o vacío, o la fecha no es válida
      */
     @Tool(description = "Crea una nueva tarea con el título y fecha indicados. Por defecto queda como pendiente.")
     @Transactional
     public Tarea crearTarea(
             @ToolParam(description = "Título descriptivo de la tarea") String titulo,
-            @ToolParam(description = "Fecha asociada, por ejemplo 2026-11-20") String fecha) {
+            @ToolParam(description = "Fecha asociada en formato yyyy-MM-dd, por ejemplo 2026-11-20 (opcional)", required = false) String fecha) {
         if (titulo == null || titulo.isBlank()) {
             throw new IllegalArgumentException("El título es obligatorio");
         }
-        return repo.save(new Tarea(titulo.trim(), normalizar(fecha), Boolean.FALSE));
+        return repo.save(new Tarea(titulo.trim(), validarFecha(fecha), Boolean.FALSE));
     }
 
     // ---------- UPDATE ----------
@@ -111,19 +135,20 @@ public class TareaToolsService {
      *
      * @param id     identificador de la tarea
      * @param titulo nuevo título, opcional
-     * @param fecha  nueva fecha, opcional
+     * @param fecha  nueva fecha en formato {@code yyyy-MM-dd}, opcional
      * @return la tarea actualizada
-     * @throws IllegalArgumentException si la tarea no existe
+     * @throws IllegalArgumentException si la tarea no existe o la fecha no es válida
      */
     @Tool(description = "Actualiza el título o la fecha de una tarea existente. Los parámetros nulos no se modifican.")
     @Transactional
     public Tarea actualizarTarea(
             @ToolParam(description = "Id de la tarea a actualizar") Long id,
             @ToolParam(description = "Nuevo título (opcional, null = no cambiar)", required = false) String titulo,
-            @ToolParam(description = "Nueva fecha (opcional, null = no cambiar)", required = false) String fecha) {
+            @ToolParam(description = "Nueva fecha en formato yyyy-MM-dd (opcional, null = no cambiar)", required = false) String fecha) {
+        String fechaValida = validarFecha(fecha);
         Tarea t = buscarPorId(id);
         if (titulo != null && !titulo.isBlank()) t.setTitulo(titulo.trim());
-        if (fecha != null && !fecha.isBlank()) t.setFecha(fecha.trim());
+        if (fechaValida != null) t.setFecha(fechaValida);
         return repo.save(t);
     }
 
@@ -154,8 +179,21 @@ public class TareaToolsService {
                 .orElseThrow(() -> new IllegalArgumentException("No existe la tarea " + id));
     }
 
-    /** Recorta espacios; devuelve {@code null} si el texto viene vacío. */
-    private static String normalizar(String valor) {
-        return (valor == null || valor.isBlank()) ? null : valor.trim();
+    /**
+     * Valida que la fecha sea ISO ({@code yyyy-MM-dd}) y exista en el calendario.
+     * Devuelve {@code null} si viene vacía, porque la fecha es opcional.
+     */
+    private static String validarFecha(String fecha) {
+        if (fecha == null || fecha.isBlank()) {
+            return null;
+        }
+        String valor = fecha.trim();
+        try {
+            LocalDate.parse(valor);
+        } catch (DateTimeParseException e) {
+            throw new IllegalArgumentException("La fecha '" + valor + "' no es válida; usa el formato "
+                    + FORMATO_FECHA + ", por ejemplo 2026-11-20");
+        }
+        return valor;
     }
 }
